@@ -12,6 +12,8 @@ NUM_OF_DECKS = 6
 UI_PIVOT = 50
 INITIAL_MONEY = 500000
 BET_UNIT = 1000
+INIT_BET_MONEY = 10000
+SCHOOL_MONEY = 2000
 
 # Layering of sprites
 module ZOrder
@@ -59,6 +61,14 @@ class IndianPoker < Gosu::Window
     @past_deck = Array.new
   end
 
+  def go_to_school
+    @bet_money_history = Array.new
+    @bet_money_history << SCHOOL_MONEY
+    @bet_money_history << SCHOOL_MONEY
+    @players[0].money -= SCHOOL_MONEY
+    @players[1].money -= SCHOOL_MONEY
+  end
+
   def init_game
     @servers = Array.new
 		@players.clear
@@ -66,8 +76,10 @@ class IndianPoker < Gosu::Window
 		@players[1] = Player.new(1)
     @play_turn = @players[0]
     @play_next = @players[1]
-    @current_bet_money = 10000
-    @bet_money_history = Array.new
+    @current_bet_money = INIT_BET_MONEY
+    
+    go_to_school
+
     @current_time_for_longbutton = Time.now
     @bet_violation_cnt = 0
     @gameover = false
@@ -125,7 +137,10 @@ class IndianPoker < Gosu::Window
     
     @players.each { |player| player.draw }
     if @betover or @gameover
-      @font.draw("===============================베팅끝===============================", 40, 600, 1.0, 1.0, 1.0)
+      @font.draw("===============================베팅끝남===============================", 40, 600, 1.0, 1.0, 1.0)
+    end
+    if @gameover
+      @font.draw("===============================카드오픈===============================", 40, 60, 1.0, 1.0, 1.0)
     end
 
     @font.draw("현재 턴 : #{@play_turn.player_name}", 720, UI_PIVOT + 40, 1.0, 1.0, 1.0)
@@ -176,6 +191,7 @@ class IndianPoker < Gosu::Window
   end
 
   def pass_turn
+    @current_bet_money = INIT_BET_MONEY
     @bet_violation_cnt = 0
     @play_turn, @play_next = if @play_turn == @players[0]
                       [@players[1], @players[0]]
@@ -227,6 +243,8 @@ class IndianPoker < Gosu::Window
         set_sun(-1)
       end
 
+      go_to_school
+
       #다시 시작
       @gameover = false
       if @future_deck.size < 2
@@ -273,6 +291,9 @@ class IndianPoker < Gosu::Window
         pass_turn
       elsif get_your_total_bet > (get_my_total_bet + bet_money.to_i) 
         #이런일이 발생하면 안된다. # 배팅액은 맞춰야 한다
+        @bet_violation_cnt += 1
+      elsif bet_money.to_i == 0
+        #이런일이 발생하면 안된다. # 0원 배팅은 없다.
         @bet_violation_cnt += 1
       else
         if get_your_total_bet == (get_my_total_bet + bet_money.to_i)
