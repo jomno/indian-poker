@@ -324,14 +324,14 @@ class IndianPoker < Gosu::Window
       [0, 1].each {|x| @players[x].hide = false }
     else
       if @play_turn.ai_flag 
-        bet_money, message = 
+        bet_money = 
             @servers[@play_turn.number].call(
                     "indian.calculate", 
                     [@play_next.card_number] + [@past_deck] + [@play_turn.money] + [@bet_money_history]
                   )
         #Log
         puts "\n[BEGIN] MESSAGE FROM AI"
-        puts message
+        # puts message
         puts "[END] MESSAGE FROM AI\n"
       else
         bet_money = @current_bet_money

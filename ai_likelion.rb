@@ -6,10 +6,10 @@ MIN_DEFAULT_BET = 1
 
 class MyAi
   def calculate(info)
-    opposite_play_card = info[0] #상대방이 들고 있는 카드 숫자
-    past_cards = info[1]         #지금까지 흘러간 카드 배열
-    my_money = info[2]           #내 주머니에 있는 돈
-    bet_history = info[3]        #지금 판에 깔린 돈 배열
+    opposite_play_card = info[0] # 상대방이 들고 있는 카드의 숫자
+    past_cards = info[1]         # 지금까지 지나간 카드들 (배열)
+    my_money = info[2]           # 내가 가지고 있는 칩
+    bet_history = info[3]        # 이때까지 나와 상대방이 판에 깔았던 칩들 (배열)
 
     your_total_bet, my_total_bet = get_total_bet_money_per_person bet_history
     this_bet = your_total_bet - my_total_bet
@@ -18,9 +18,11 @@ class MyAi
       this_bet = MIN_DEFAULT_BET
     end
 
-    return [this_bet, "debug message"]
+    # Write your own codes here
 
-    #Codes END
+    # Return values
+    return this_bet
+
   end
 
 
