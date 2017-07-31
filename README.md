@@ -126,7 +126,7 @@ class MyAi
     # Write your own codes here
 
     # Return values
-    return [this_bet, "debug message"]
+    return this_bet
 
   end
 ```
