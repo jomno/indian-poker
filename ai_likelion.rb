@@ -2,7 +2,7 @@ require "xmlrpc/server"
 require "socket"
 
 s = XMLRPC::Server.new(ARGV[0])
-MIN_DEFAULT_BET = 1000
+MIN_DEFAULT_BET = 1
 
 class MyAi
   def calculate(info)

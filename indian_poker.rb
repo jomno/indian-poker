@@ -10,10 +10,10 @@ require 'rbconfig'
 WIDTH, HEIGHT = 1000, 700
 NUM_OF_DECKS = 6
 UI_PIVOT = 50
-INITIAL_MONEY = 500000
-BET_UNIT = 1000
-INIT_BET_MONEY = 10000
-SCHOOL_MONEY = 2000
+INITIAL_MONEY = 30
+BET_UNIT = 1
+INIT_BET_MONEY = 1
+SCHOOL_MONEY = 1
 
 # Layering of sprites
 module ZOrder
@@ -84,6 +84,7 @@ class IndianPoker < Gosu::Window
     @bet_violation_cnt = 0
     @gameover = false
     @betover = false
+    @end_game = false
     @sun_player = @players[0] #선플레이어
 
     shuffle_cards
@@ -128,6 +129,10 @@ class IndianPoker < Gosu::Window
     @players = Array.new(2)
     @board  = Board.instance
     @font = Gosu::Font.new(self, Gosu::default_font_name, 18)
+    @font_2x = Gosu::Font.new(self, Gosu::default_font_name, 24)
+    @font_3x = Gosu::Font.new(self, Gosu::default_font_name, 30)
+    @font_4x = Gosu::Font.new(self, Gosu::default_font_name, 36)
+    @font_5x = Gosu::Font.new(self, Gosu::default_font_name, 42)
 
     init_game
   end
@@ -136,16 +141,21 @@ class IndianPoker < Gosu::Window
     @board.draw
     
     @players.each { |player| player.draw }
-    if @betover or @gameover
-      @font.draw("===============================베팅끝남===============================", 40, 600, 1.0, 1.0, 1.0)
-    end
-    if @gameover
-      @font.draw("===============================카드오픈===============================", 40, 60, 1.0, 1.0, 1.0)
+
+    betover_opacity = @betover || @gameover ? 0xff_ffffff : 0x66_ffffff
+    gameover_opacity = @gameover ? 0xff_ffffff : 0x66_ffffff
+    # winner_opacity = @gameover ? 0xff_ffffff : 0x33_ffffff
+
+    @font_4x.draw_rel("베팅 중", 500, 170, 1.0, 0.5, 0.0)
+    @font_4x.draw_rel("베팅 끝", 500, 220, 1.0, 0.5, 0.0, 1, 1, betover_opacity)
+    @font_4x.draw_rel("오픈", 500, 270, 1.0, 0.5, 0.0, 1, 1, gameover_opacity)
+    if @end_game
+      @font_4x.draw_rel("끝!", 500, 320, 1.0, 0.5, 0.0, 1, 1, gameover_opacity)
     end
 
-    @font.draw("현재 턴 : #{@play_turn.player_name}", 720, UI_PIVOT + 40, 1.0, 1.0, 1.0)
-    @font.draw("왼쪽카드 히든 : Q", 720, UI_PIVOT + 60, 1.0, 1.0, 1.0)
-    @font.draw("오른쪽카드 히든 : W", 720, UI_PIVOT + 80, 1.0, 1.0, 1.0)
+    # @font.draw("현재 턴 : #{@play_turn.player_name}", 720, UI_PIVOT + 40, 1.0, 1.0, 1.0)
+    # @font.draw("왼쪽카드 히든 : Q", 720, UI_PIVOT + 60, 1.0, 1.0, 1.0)
+    # @font.draw("오른쪽카드 히든 : W", 720, UI_PIVOT + 80, 1.0, 1.0, 1.0)
 
     pivot_font_y_position = [UI_PIVOT + 150, UI_PIVOT + 220]
     ui_index = 0
@@ -153,37 +163,69 @@ class IndianPoker < Gosu::Window
     total_bet = Array.new
     total_bet[0] = if @play_turn == @players[1] then get_your_total_bet else get_my_total_bet end
     total_bet[1] = if @play_turn == @players[1] then get_my_total_bet else get_your_total_bet end
-    @players.each do |player|
-      @font.draw("#{position[ui_index]} : #{player.player_name}", 720, 
-                    pivot_font_y_position[ui_index], 1.0, 1.0, 1.0)
-      @font.draw("Total Money : #{player.money}", 720, 
-                    pivot_font_y_position[ui_index] + 20, 1.0, 1.0, 1.0)
-      @font.draw("Total Bet Money : #{total_bet[ui_index]}", 720, 
-                    pivot_font_y_position[ui_index] + 40, 1.0, 1.0, 1.0)
-      ui_index += 1
-      unless player.hide
-        left_position = [80, 380] 
-        @font.draw(player.player_name, left_position[player.number], 140, 1.0, 1.0, 1.0)
+
+    @players.each_with_index do |player, index|
+ 
+      x_position = [220, WIDTH-220]
+      bet_position = [420, WIDTH-420]
+
+      @font.draw_rel("베팅", bet_position[index], 520, 1.0, 0.5, 0.0)
+      if @players[0].died || @players[1].died
+        @font_3x.draw_rel("#{total_bet[index-1]}", bet_position[index], 545, 1.0, 0.5, 0.0)
+      else
+        @font_3x.draw_rel("#{total_bet[index]}", bet_position[index], 545, 1.0, 0.5, 0.0)
       end
+
+      player_name_opacity = (!@betover && !@gameover && @play_turn != player) ? 0x66_ffffff : 0xff_ffffff
+      @font_2x.draw_rel(player.player_name, x_position[player.number], 65, 1.0, 0.5, 0.0, 1, 1, player_name_opacity)
+
+      # @font_4x.draw_rel("●", 450, 300, 1.0, 0.5, 0.0, 1, 1, winner_opacity)
+
+      if !@betover && !@gameover && @play_turn == player
+        @font_2x.draw_rel("▼", x_position[player.number], 30, 1.0, 0.5, 0.0)
+
+        unless player.ai_flag
+          @font.draw_rel("+", bet_position[index], 578, 1.0, 0.5, 0.0)
+          @font_2x.draw_rel("◀　#{@current_bet_money}　▶", bet_position[index], 601, 1.0, 0.5, 0.0)
+
+          @font.draw_rel("C - 콜", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 630, 1.0, 0.0, 0.0)
+          @font.draw_rel("D - 다이", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 650, 1.0, 0.0, 0.0)
+          @font.draw_rel("N - 레이즈", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
+        else
+          @font.draw_rel("N - 다음 턴 연산하기", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
+        end
+
+      elsif @betover
+        @font.draw_rel("N - 카드 오픈", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
+      elsif @gameover
+        @font.draw_rel("N - 다음 게임", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)        
+      end
+
+      @font.draw_rel("보유 칩", x_position[index], 520, 1.0, 0.5, 0.0)
+      @font_3x.draw_rel("#{player.money}", x_position[index], 545, 1.0, 0.5, 0.0)
+
     end
 
-    total_bet_money = 0
-    @bet_money_history.each {|x| total_bet_money += x.to_i}
-    @font.draw("판돈 : #{total_bet_money}", 720, UI_PIVOT + 310, 1.0, 1.0, 1.0)
-    @font.draw("배팅 위반 : #{@bet_violation_cnt}", 720, UI_PIVOT + 330, 1.0, 1.0, 1.0)
-    @font.draw("새로 시작하기 : R", 720, UI_PIVOT + 370, 1.0, 1.0, 1.0)
-    @font.draw("턴 넘기기 : P", 720, UI_PIVOT + 390, 1.0, 1.0, 1.0)
-    @font.draw("다음 턴 연산하기 : N", 720, UI_PIVOT + 410, 1.0, 1.0, 1.0)
-    @font.draw("(사람) 배팅금액 : ", 720, UI_PIVOT + 450, 1.0, 1.0, 1.0)
-    @font.draw("#{@current_bet_money}", 830, UI_PIVOT + 450, 1.0, 1.0, 1.0)
-    @font.draw("(사람) 배팅금액 업 : Up, 다운 : Down", 720, UI_PIVOT + 470, 1.0, 1.0, 1.0)
-    @font.draw("(사람) 콜 : C", 720, UI_PIVOT + 490, 1.0, 1.0, 1.0)
-    @font.draw("(사람) 다이 : D", 720, UI_PIVOT + 510, 1.0, 1.0, 1.0)
-    @font.draw("제작 : 멋쟁이사자처럼", 780, 670, 1.0, 1.0, 1.0)
+    total_bet_money = @bet_money_history.inject(0, :+)
+
+    @font.draw_rel("판돈", 500, 430, 1.0, 0.5, 0.0)
+    @font_3x.draw_rel("#{total_bet_money}", 500, 455, 1.0, 0.5, 0.0)
+
+    @font.draw_rel("배팅 위반 - #{@bet_violation_cnt}", 600, 670, 1.0, 0.5, 0.0)
+
+
+    # @font.draw_rel("(사람) 배팅금액 : ", 500, UI_PIVOT + 450, 1.0, 0.5, 0.0)
+    # @font.draw_rel("#{@current_bet_money}", 600, UI_PIVOT + 450, 1.0, 0.5, 0.0)
+    # @font.draw_rel("(사람) 배팅금액 업 : Up, 다운 : Down", 500, UI_PIVOT + 470, 1.0, 0.5, 0.0)
+
+    @font.draw_rel("R - 새로 시작하기", 100, 670, 1.0, 0.0, 0.0)
+    @font.draw_rel("P - 턴 넘기기", 130 + @font.text_width("R - 새로 시작하기"), 670, 1.0, 0.0, 0.0)
+
+    @font.draw_rel("멋쟁이 사자처럼", 900, 670, 1.0, 1.0, 0.0)
   end
 
   def needs_cursor?
-    false
+    true
   end
 
   def restart
@@ -220,7 +262,10 @@ class IndianPoker < Gosu::Window
   end
 
   def calculate
-    if @gameover
+
+    if @end_game
+
+    elsif @gameover
       #돈 나눠주기
       total_money = 0
       @bet_money_history.each { |x| total_money += x.to_i }
@@ -243,28 +288,36 @@ class IndianPoker < Gosu::Window
         set_sun(-1)
       end
 
-      go_to_school
 
-      #다시 시작
-      @gameover = false
-      if @future_deck.size < 2
-        shuffle_cards
+      if @play_turn.money <= 0 || @play_next.money <= 0
+        @end_game = true
       else
-        @past_deck << @current_deck
-        @past_deck.flatten!
-        @current_deck = @future_deck.pop(2)
-        if @sun_player == @players[0] 
-          @players[0].card_number = @current_deck[0]
-          @players[1].card_number = @current_deck[1]
+
+        go_to_school
+
+        #다시 시작
+        @gameover = false
+        if @future_deck.size < 2
+          shuffle_cards
         else
-          @players[0].card_number = @current_deck[1]
-          @players[1].card_number = @current_deck[0]
+          @past_deck << @current_deck
+          @past_deck.flatten!
+          @current_deck = @future_deck.pop(2)
+          if @sun_player == @players[0] 
+            @players[0].card_number = @current_deck[0]
+            @players[1].card_number = @current_deck[1]
+          else
+            @players[0].card_number = @current_deck[1]
+            @players[1].card_number = @current_deck[0]
+          end
+          [0, 1].each do |x|
+            @players[x].hide = true
+            @players[x].died = false
+          end
         end
-        [0, 1].each do |x|
-          @players[x].hide = true
-          @players[x].died = false
-        end
+
       end
+
     elsif @betover
       @gameover = true
       @betover = false
@@ -296,7 +349,7 @@ class IndianPoker < Gosu::Window
         #이런일이 발생하면 안된다. # 0원 배팅은 없다.
         @bet_violation_cnt += 1
       else
-        if get_your_total_bet == (get_my_total_bet + bet_money.to_i)
+        if get_your_total_bet == (get_my_total_bet + bet_money.to_i) || @play_turn.money <= 0 || @play_next.money <= 0
           @betover = true
         end
         @bet_money_history << bet_money.to_i
@@ -322,26 +375,28 @@ class IndianPoker < Gosu::Window
       hide_toggle(0)
     when Gosu::KbW
       hide_toggle(1)
-    when Gosu::KB_UP
-      @current_bet_money += BET_UNIT
-    when Gosu::KB_DOWN
-      @current_bet_money -= BET_UNIT
+    when Gosu::KB_RIGHT
+      @current_bet_money += BET_UNIT if @play_turn.money > @current_bet_money && @play_next.money + get_your_total_bet > @current_bet_money + get_my_total_bet
+    when Gosu::KB_LEFT
+      @current_bet_money -= BET_UNIT if @current_bet_money > -1
     when Gosu::KbC
       if @bet_money_history.empty?
         @current_bet_money = 0
       else 
         @current_bet_money = get_your_total_bet - get_my_total_bet
       end
+      calculate
     when Gosu::KbD
       @current_bet_money = 0 - BET_UNIT
+      calculate
     end 
   end
 
   def update
-    if Gosu.button_down? Gosu::KB_UP
-      @current_bet_money += BET_UNIT if Time.now - @current_time_for_longbutton > 0.5
-    elsif Gosu.button_down? Gosu::KB_DOWN
-      @current_bet_money -= BET_UNIT if Time.now - @current_time_for_longbutton > 0.5 
+    if Gosu.button_down? Gosu::KB_RIGHT
+      @current_bet_money += BET_UNIT if Time.now - @current_time_for_longbutton > 0.5 && @play_turn.money > @current_bet_money && @play_next.money + get_your_total_bet > @current_bet_money + get_my_total_bet
+    elsif Gosu.button_down? Gosu::KB_LEFT
+      @current_bet_money -= BET_UNIT if Time.now - @current_time_for_longbutton > 0.5 && @current_bet_money > -1
     else
       @current_time_for_longbutton = Time.now
     end
@@ -389,18 +444,23 @@ class Player
     @player_name = "사람_#{Array.new(6){rand(10)}.join}"
     @ai_flag = false
 
-    #initialize images
-
+    # initialize card images
     @images = Array.new
     (1..10).to_a.each do |x|
       @images[x] = Gosu::Image.new("media/#{x}_of_spades.png")
     end
+
+    # keyboard Q & W
+    @hidden_cards = [Gosu::Image.new("media/q.png"), Gosu::Image.new("media/w.png")]
   end
   
   def draw
-    unless @hide
-      left_position = [80, 380] 
-      @images[@card_number].draw(left_position[@number], 160, ZOrder::Card, 0.5, 0.5)
+      card_width_quarter = @images[@card_number].width*0.25
+      x_position = [220-card_width_quarter, WIDTH-220-card_width_quarter]
+    if @hide
+      @hidden_cards[@number].draw(x_position[@number], 110, ZOrder::Card, 0.5, 0.5)
+    else
+      @images[@card_number].draw(x_position[@number], 110, ZOrder::Card, 0.5, 0.5)
     end
   end
 
