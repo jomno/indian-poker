@@ -87,7 +87,7 @@ $ git clone https://github.com/likelion-net/indian-poker.git
 `Download ZIP` 링크로 다운로드 받아 편한 곳에 압축을 푼다.
 
 ## Install Dependencies
-Alggago 실행을 위한 gem을 설치한다.
+Indian poker 실행을 위한 gem을 설치한다.
 ```console
 $ gem install gosu chipmunk slave childprocess
 ```
@@ -115,7 +115,7 @@ $ ruby indian_poker.rb
 `indian_poker.rb` 파일과 같은 위치에 `ai_[name].rb` 파일 **둘**을 둔다.
 
 ## Make Your Own Indian Poker Code
-`ai_likelion.rb` 파일의 다음 부분을 수정하여 Alggago AI를 만든다.
+`ai_likelion.rb` 파일의 다음 부분을 수정하여 Indian poker AI를 만든다.
 
 ```ruby
 class MyAi
