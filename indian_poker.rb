@@ -8,7 +8,7 @@ require 'childprocess'
 require 'rbconfig'
 
 WIDTH, HEIGHT = 1000, 700
-NUM_OF_DECKS = 6
+NUM_OF_DECKS = 2
 UI_PIVOT = 50
 INITIAL_MONEY = 30
 BET_UNIT = 1
@@ -45,7 +45,7 @@ class IndianPoker < Gosu::Window
   def shuffle_cards
     @future_deck = Array.new
     (1..10).to_a.each do |x|
-      NUM_OF_DECKS.times do |y|
+      2.times do |y|
         @future_deck << x
       end
     end
@@ -85,6 +85,7 @@ class IndianPoker < Gosu::Window
     @gameover = false
     @betover = false
     @end_game = false
+    @remaining_deck = NUM_OF_DECKS
     @sun_player = @players[0] #선플레이어
 
     shuffle_cards
@@ -150,7 +151,7 @@ class IndianPoker < Gosu::Window
     @font_4x.draw_rel("베팅 끝", 500, 220, 1.0, 0.5, 0.0, 1, 1, betover_opacity)
     @font_4x.draw_rel("오픈", 500, 270, 1.0, 0.5, 0.0, 1, 1, gameover_opacity)
     if @end_game
-      @font_4x.draw_rel("끝!", 500, 320, 1.0, 0.5, 0.0, 1, 1, gameover_opacity)
+      @font_5x.draw_rel("----- 끝 -----", 500, 340, 1.0, 0.5, 0.0, 1, 1, gameover_opacity)
     end
 
     # @font.draw("현재 턴 : #{@play_turn.player_name}", 720, UI_PIVOT + 40, 1.0, 1.0, 1.0)
@@ -189,7 +190,7 @@ class IndianPoker < Gosu::Window
           @font_2x.draw_rel("◀　#{@current_bet_money}　▶", bet_position[index], 601, 1.0, 0.5, 0.0)
 
           @font.draw_rel("C - 콜", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 630, 1.0, 0.0, 0.0)
-          @font.draw_rel("D - 다이", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 650, 1.0, 0.0, 0.0)
+          @font.draw_rel("F - 폴드", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 650, 1.0, 0.0, 0.0)
           @font.draw_rel("N - 레이즈", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
         else
           @font.draw_rel("N - 다음 턴 연산하기", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
@@ -298,7 +299,13 @@ class IndianPoker < Gosu::Window
         #다시 시작
         @gameover = false
         if @future_deck.size < 2
-          shuffle_cards
+          @remaining_deck -= 1
+          if @remaining_deck == 0
+            @gameover = true
+            @end_game = true
+          else
+            shuffle_cards
+          end
         else
           @past_deck << @current_deck
           @past_deck.flatten!
@@ -310,10 +317,11 @@ class IndianPoker < Gosu::Window
             @players[0].card_number = @current_deck[1]
             @players[1].card_number = @current_deck[0]
           end
-          [0, 1].each do |x|
-            @players[x].hide = true
-            @players[x].died = false
-          end
+        end
+
+        [0, 1].each do |x|
+          @players[x].hide = true
+          @players[x].died = false
         end
 
       end
@@ -386,7 +394,7 @@ class IndianPoker < Gosu::Window
         @current_bet_money = get_your_total_bet - get_my_total_bet
       end
       calculate
-    when Gosu::KbD
+    when Gosu::KbF
       @current_bet_money = 0 - BET_UNIT
       calculate
     end 
