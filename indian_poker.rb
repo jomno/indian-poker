@@ -51,7 +51,7 @@ class IndianPoker < Gosu::Window
     end
     @future_deck.shuffle!
     @current_deck = @future_deck.pop(2)
-    if @sun_player == @players[0] 
+    if @sun_player == @players[0]
       @players[0].card_number = @current_deck[0]
       @players[1].card_number = @current_deck[1]
     else
@@ -77,7 +77,7 @@ class IndianPoker < Gosu::Window
     @play_turn = @players[0]
     @play_next = @players[1]
     @current_bet_money = INIT_BET_MONEY
-    
+
     go_to_school
 
     @current_time_for_longbutton = Time.now
@@ -122,7 +122,7 @@ class IndianPoker < Gosu::Window
       end
     end
   end
-  
+
   def initialize
     super(WIDTH, HEIGHT, false)
     self.caption = '인디언포커!'
@@ -140,7 +140,7 @@ class IndianPoker < Gosu::Window
 
   def draw
     @board.draw
-    
+
     @players.each { |player| player.draw }
 
     betover_opacity = @betover || @gameover ? 0xff_ffffff : 0x66_ffffff
@@ -166,7 +166,7 @@ class IndianPoker < Gosu::Window
     total_bet[1] = if @play_turn == @players[1] then get_my_total_bet else get_your_total_bet end
 
     @players.each_with_index do |player, index|
- 
+
       x_position = [220, WIDTH-220]
       bet_position = [420, WIDTH-420]
 
@@ -199,7 +199,7 @@ class IndianPoker < Gosu::Window
       elsif @betover
         @font.draw_rel("N - 카드 오픈", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
       elsif @gameover
-        @font.draw_rel("N - 다음 게임", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)        
+        @font.draw_rel("N - 다음 게임", 160 + @font.text_width("R - 새로 시작하기") + @font.text_width("P - 턴 넘기기"), 670, 1.0, 0.0, 0.0)
       end
 
       @font.draw_rel("보유 칩", x_position[index], 520, 1.0, 0.5, 0.0)
@@ -248,7 +248,7 @@ class IndianPoker < Gosu::Window
       @sun_player = @players[1]
       @play_turn = @players[1]
       @play_next = @players[0]
-    elsif id == 0 
+    elsif id == 0
       @sun_player = @players[0]
       @play_turn = @players[0]
       @play_next = @players[1]
@@ -310,7 +310,7 @@ class IndianPoker < Gosu::Window
           @past_deck << @current_deck
           @past_deck.flatten!
           @current_deck = @future_deck.pop(2)
-          if @sun_player == @players[0] 
+          if @sun_player == @players[0]
             @players[0].card_number = @current_deck[0]
             @players[1].card_number = @current_deck[1]
           else
@@ -331,12 +331,13 @@ class IndianPoker < Gosu::Window
       @betover = false
       [0, 1].each {|x| @players[x].hide = false }
     else
-      if @play_turn.ai_flag 
-        bet_money = 
+      if @play_turn.ai_flag
+        bet_money =
             @servers[@play_turn.number].call(
-                    "indian.calculate", 
+                    "indian.calculate",
                     [@play_next.card_number] + [@past_deck] + [@play_turn.money] + [@bet_money_history]
                   )
+        puts get_your_total_bet
         #Log
         puts "\n[BEGIN] MESSAGE FROM AI"
         # puts message
@@ -344,13 +345,13 @@ class IndianPoker < Gosu::Window
       else
         bet_money = @current_bet_money
       end
-      
+
       # Update Game Status
       if bet_money.to_i < 0 #DIE
         @play_turn.died = true
         @betover = true
         pass_turn
-      elsif get_your_total_bet > (get_my_total_bet + bet_money.to_i) 
+      elsif get_your_total_bet > (get_my_total_bet + bet_money.to_i)
         #이런일이 발생하면 안된다. # 배팅액은 맞춰야 한다
         @bet_violation_cnt += 1
       elsif bet_money.to_i == 0
@@ -371,13 +372,13 @@ class IndianPoker < Gosu::Window
     @players[id].hide_toggle
   end
 
-  def button_down(id) 
-    case id 
-    when Gosu::KbR 
+  def button_down(id)
+    case id
+    when Gosu::KbR
       restart
-    when Gosu::KbP 
+    when Gosu::KbP
       pass_turn
-    when Gosu::KbN 
+    when Gosu::KbN
       calculate
     when Gosu::KbQ
       hide_toggle(0)
@@ -390,14 +391,14 @@ class IndianPoker < Gosu::Window
     when Gosu::KbC
       if @bet_money_history.empty?
         @current_bet_money = 0
-      else 
+      else
         @current_bet_money = get_your_total_bet - get_my_total_bet
       end
       calculate
     when Gosu::KbF
       @current_bet_money = 0 - BET_UNIT
       calculate
-    end 
+    end
   end
 
   def update
@@ -437,10 +438,10 @@ class Board
   def draw
     image_resize_ratio = HEIGHT / @image.height.to_f
     @image.draw(0, 0, ZOrder::Board, image_resize_ratio, image_resize_ratio)
-  end 
+  end
 end
 
-class Player 
+class Player
   attr_reader :stones, :color
   attr_accessor :player_name, :ai_flag, :number, :money, :hide, :card_number, :died
   def initialize(number)
@@ -461,7 +462,7 @@ class Player
     # keyboard Q & W
     @hidden_cards = [Gosu::Image.new("media/q.png"), Gosu::Image.new("media/w.png")]
   end
-  
+
   def draw
       card_width_quarter = @images[@card_number].width*0.25
       x_position = [220-card_width_quarter, WIDTH-220-card_width_quarter]
